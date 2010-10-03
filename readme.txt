@@ -1,5 +1,5 @@
 === Post Gallery Widget ===
-Contributors: wpmuguru, cuny-acedemic-commons
+Contributors: wpmuguru, cuny-academic-commons
 Tags: custom, post, gallery, widget
 Requires at least: 3.0
 Tested up to: 3.0.1
