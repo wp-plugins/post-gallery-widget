@@ -4,7 +4,7 @@ Plugin Name: Rotating Post Gallery
 Plugin URI: http://wpmututorials.com/plugins/post-gallery-widget/
 Description: A Rotating Gallery Widget using a custom post type to create Gallery Posts.
 Author: Ron Rennick
-Version: 0.1
+Version: 0.2
 Author URI: http://ronandandrea.com/
 
 This plugin is a collaboration project with contributions from the CUNY Acedemic Commons (http://dev.commons.gc.cuny.edu/)
@@ -31,6 +31,8 @@ This plugin is a collaboration project with contributions from the CUNY Acedemic
  */
 class PGW_Post_Type {
 	var $post_type_name = 'pgw_post';
+	var $handle = 'pgw-meta-box';
+	var $attachments = null;
 
 	var $post_type = array(
 		'label' => 'Gallery Posts',
@@ -70,6 +72,7 @@ class PGW_Post_Type {
 
 	function init() {
 		register_post_type( $this->post_type_name, $this->post_type );
+		add_action('admin_menu', array( &$this, 'admin_menu' ), 20);
 	}
 
 	function query_posts( $num_posts = -1, $size = 'full' ) {
@@ -97,6 +100,24 @@ class PGW_Post_Type {
 		}
 		wp_reset_query();
 		return $gallery;
+	}
+	function admin_menu() {
+		add_action( 'do_meta_boxes', array( &$this, 'add_metabox' ), 9 );
+	}
+	function add_metabox() {
+		global $post;
+		if( empty( $post ) || $this->post_type_name != $post->post_type )
+			return;
+		$child = array( 'post_parent' => $post->ID, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => 'none' );
+		$this->attachments = get_children( $child );
+		if( !empty( $this->attachments ) )
+			add_meta_box( $this->handle, 'Attached Images', array( &$this, 'image_metabox' ), $this->post_type_name, 'normal' );
+	}
+	function image_metabox() {
+		echo '<p>';
+		foreach( (array) $this->attachments as $k => $v )
+			echo '<span style="padding:3px;">' . wp_get_attachment_image( $k, 'thumbnail', false ) . '</span>';
+		echo '</p>';
 	}
 }
 
@@ -170,13 +191,15 @@ class Rotating_Post_Widget extends WP_Widget {
 <?php	}
 
 	function wp_head() {
-		$this->queued = true;
-		$url = plugin_dir_url( __FILE__ );
+		if( !is_admin() ) {
+			$this->queued = true;
+			$url = plugin_dir_url( __FILE__ );
 
-		wp_enqueue_style( 'pgw-cycle', $url . 'css/style.css' );
-		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script( 'pgw-cycle-js', $url . 'js/jquery.cycle.lite.min.js', array( 'jquery' ), '1.4', true );
-		wp_enqueue_script( 'pgw-cycle-slide-js', $url . 'js/pgw-slide.js', false, false, true );
+			wp_enqueue_style( 'pgw-cycle', $url . 'css/style.css' );
+			wp_enqueue_script( 'jquery' );
+			wp_enqueue_script( 'pgw-cycle-js', $url . 'js/jquery.cycle.lite.min.js', array( 'jquery' ), '1.4', true );
+			wp_enqueue_script( 'pgw-cycle-slide-js', $url . 'js/pgw-slide.js', false, false, true );
+		}
 	}
 
 	function wp_footer() {

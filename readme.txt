@@ -41,6 +41,9 @@ This plugin was written by [Ron Rennick](http://ronandandrea.com/) in collaborat
 
 == Changelog ==
 
+= 0.2 =
+* Add a metabox in the edit post area that shows thumbnails of attached images.
+
 = 0.1 =
 * Original version.
 
