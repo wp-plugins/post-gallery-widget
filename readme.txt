@@ -41,6 +41,9 @@ This plugin was written by [Ron Rennick](http://ronandandrea.com/) in collaborat
 
 == Changelog ==
 
+= 0.2.1 =
+* Removed the inadvertent inclusion of rewrite rules.
+
 = 0.2 =
 * Add a metabox in the edit post area that shows thumbnails of attached images.
 
