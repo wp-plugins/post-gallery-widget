@@ -35,8 +35,6 @@ class PGW_Post_Type {
 	var $attachments = null;
 
 	var $post_type = array(
-		'label' => 'Gallery Posts',
-		'singular_label' => 'Gallery Post',
 		'menu_position' => '1',
 		'taxonomies' => array(),
 		'public' => true,
@@ -54,6 +52,8 @@ class PGW_Post_Type {
 	function  __construct() {
 		add_action( 'init', array( &$this, 'init' ) );
 
+		$this->post_type['label'] = __( 'Gallery Posts', 'post-gallery-widget' );
+		$this->post_type['singular_label'] = __( 'Gallery Post', 'post-gallery-widget' );
 		$this->post_type['description'] = $this->post_type['singular_label'];
 		$this->post_type['labels'] = array(
 			'name' => $this->post_type['label'],
@@ -112,7 +112,7 @@ class PGW_Post_Type {
 		$child = array( 'post_parent' => $post->ID, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => 'none' );
 		$this->attachments = get_children( $child );
 		if( !empty( $this->attachments ) )
-			add_meta_box( $this->handle, 'Attached Images', array( &$this, 'image_metabox' ), $this->post_type_name, 'normal' );
+			add_meta_box( $this->handle, __( 'Attached Images', 'post-gallery-widget' ), array( &$this, 'image_metabox' ), $this->post_type_name, 'normal' );
 	}
 	function image_metabox() {
 		echo '<p>';
@@ -131,8 +131,8 @@ class Rotating_Post_Widget extends WP_Widget {
 	var $queued = false;
 
 	function Rotating_Post_Widget() {
-		$widget_ops = array( 'description' => __( 'Rotating Post Gallery Widget' ) );
-		$this->WP_Widget( $this->id, __('Rotating Post Gallery Widget'), $widget_ops );
+		$widget_ops = array( 'description' => __( 'Rotating Post Gallery Widget', 'post-gallery-widget' ) );
+		$this->WP_Widget( $this->id, __( 'Rotating Post Gallery Widget', 'post-gallery-widget' ), $widget_ops );
 		add_action( 'wp_head', array( &$this, 'wp_head' ), 1 );
 		add_action( 'wp_footer', array( &$this, 'wp_footer' ), 2 );
 	}
@@ -179,11 +179,11 @@ class Rotating_Post_Widget extends WP_Widget {
 	}
 
 	function form( $instance ) { ?>
-		<p><label for="<?php echo $this->get_field_id('how_many'); ?>"><?php _e('How many gallery posts:') ?></label>
-		<input type="text" id="<?php echo $this->get_field_id('how_many'); ?>" name="<?php echo $this->get_field_name('how_many'); ?>" value="<?php echo ( $instance['how_many'] > 0 ? esc_attr( $instance['how_many'] ) : '' ); ?>" /></p>
+		<p><label for="<?php echo $this->get_field_id( 'how_many' ); ?>"><?php _e( 'How many gallery posts:', 'post-gallery-widget' ) ?></label>
+		<input type="text" id="<?php echo $this->get_field_id( 'how_many' ); ?>" name="<?php echo $this->get_field_name( 'how_many' ); ?>" value="<?php echo ( $instance['how_many'] > 0 ? esc_attr( $instance['how_many'] ) : '' ); ?>" /></p>
 		<p>
-			<label for="<?php echo $this->get_field_id('size'); ?>"><?php _e( 'Image Size:' ); ?></label>
-			<select name="<?php echo $this->get_field_name('size'); ?>" id="<?php echo $this->get_field_id('size'); ?>" class="widefat">
+			<label for="<?php echo $this->get_field_id( 'size' ); ?>"><?php _e( 'Image Size:', 'post-gallery-widget' ); ?></label>
+			<select name="<?php echo $this->get_field_name( 'size' ); ?>" id="<?php echo $this->get_field_id( 'size' ); ?>" class="widefat">
 <?php		foreach( $this->sizes as $k => $v ) { ?>
 				<option value="<?php echo $k; ?>"<?php selected( $instance['size'], $k ); ?>><?php _e( $v ); ?></option>
 <?php		} ?>
