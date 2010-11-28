@@ -52,6 +52,7 @@ class PGW_Post_Type {
 	function  __construct() {
 		add_action( 'init', array( &$this, 'init' ) );
 
+		load_plugin_textdomain( 'post-gallery-widget' );
 		$this->post_type['label'] = __( 'Gallery Posts', 'post-gallery-widget' );
 		$this->post_type['singular_label'] = __( 'Gallery Post', 'post-gallery-widget' );
 		$this->post_type['description'] = $this->post_type['singular_label'];
