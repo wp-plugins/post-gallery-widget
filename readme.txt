@@ -2,8 +2,8 @@
 Contributors: wpmuguru, cuny-academic-commons
 Tags: custom, post, gallery, widget
 Requires at least: 3.0
-Tested up to: 3.0.1
-Stable tag: 0.2.1
+Tested up to: 3.0.3
+Stable tag: 0.3
 
 A rotating gallery widget using a custom post type for gallery content.
 
@@ -40,6 +40,10 @@ This plugin was written by [Ron Rennick](http://ronandandrea.com/) in collaborat
 1. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
+
+= 0.3 =
+* add post order option to widget
+* auto reorder menu_order and push duplicate menu_order posts down in order
 
 = 0.2.1 =
 * Removed the inadvertent inclusion of rewrite rules.

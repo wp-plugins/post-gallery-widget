@@ -4,7 +4,7 @@ Plugin Name: Rotating Post Gallery
 Plugin URI: http://wpmututorials.com/plugins/post-gallery-widget/
 Description: A Rotating Gallery Widget using a custom post type to create Gallery Posts.
 Author: Ron Rennick
-Version: 0.2.1.1
+Version: 0.3
 Author URI: http://ronandandrea.com/
 
 This plugin is a collaboration project with contributions from the CUNY Acedemic Commons (http://dev.commons.gc.cuny.edu/)
@@ -74,15 +74,38 @@ class PGW_Post_Type {
 
 	function init() {
 		register_post_type( $this->post_type_name, $this->post_type );
-		add_action('admin_menu', array( &$this, 'admin_menu' ), 20);
+		add_action( 'admin_menu', array( &$this, 'admin_menu' ), 20 );
+		add_action( 'save_post', array( &$this, 'save_post' ), 12, 2 );
 	}
 
-	function query_posts( $num_posts = -1, $size = 'full' ) {
-		$query = sprintf( 'showposts=%d&post_type=%s&orderby=none', $num_posts, $this->post_type_name );
+	function query_posts( $num_posts = -1, $size = 'full', $order = false ) {
+		if( !$order )
+			$order = 'date';
+		switch( $order ) {
+			case 'rand':
+				$query = sprintf( 'showposts=%d&post_type=%s&orderby=none', $num_posts, $this->post_type_name );
+				break;
+			case 'date':
+				$query = sprintf( 'showposts=%d&post_type=%s&orderby=post_date&order=DESC', $num_posts, $this->post_type_name );
+				break;
+			case 'menu':
+				$query = sprintf( 'showposts=%d&post_type=%s&orderby=menu_order&order=ASC', $num_posts, $this->post_type_name );
+				break;
+			default:
+				return array();
+				break;
+		}
 		$posts = new WP_Query( $query );
 		$gallery = array();
 		$child = array( 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => 'none' );
+		$index = -1;
 		while( $posts->have_posts() ) {
+			if( 'rand' == $order ) {
+				while( $index < 0 || array_key_exists( $index, $gallery ) )
+					$index = rand( 0, ( count( $gallery ) * 2 ) + 10000 );
+			} else
+				$index++;
+
 			$posts->the_post();
 			$child['post_parent'] = get_the_ID();
 			$attachments = get_children( $child );
@@ -98,8 +121,11 @@ class PGW_Post_Type {
 					next( $attachments );
 			}
 			$p->tag = wp_get_attachment_image( key( $attachments ), $size, false );
-			$gallery[] = $p;
+			$gallery[$index] = $p;
 		}
+		if( 'rand' == $order )
+			ksort( $gallery );
+
 		wp_reset_query();
 		return $gallery;
 	}
@@ -114,12 +140,34 @@ class PGW_Post_Type {
 		$this->attachments = get_children( $child );
 		if( !empty( $this->attachments ) )
 			add_meta_box( $this->handle, __( 'Attached Images', 'post-gallery-widget' ), array( &$this, 'image_metabox' ), $this->post_type_name, 'normal' );
+
+		add_meta_box( 'pageparentdiv', __('Attributes'), array( &$this, 'menu_order_metabox' ), $this->post_type_name, 'side' );
 	}
 	function image_metabox() {
 		echo '<p>';
 		foreach( (array) $this->attachments as $k => $v )
 			echo '<span style="padding:3px;">' . wp_get_attachment_image( $k, 'thumbnail', false ) . '</span>';
 		echo '</p>';
+	}
+	function menu_order_metabox() { 
+		global $post; ?>
+<p><strong><?php _e( 'Display Order', 'post-gallery-widget' ) ?></strong></p>
+<p><label class="screen-reader-text" for="menu_order"><?php _e( 'Display Order', 'post-gallery-widget' ); ?></label><input name="menu_order" type="text" size="4" id="menu_order" value="<?php echo esc_attr($post->menu_order) ?>" /></p>
+<?php	}
+	function save_post( $post_id, $post ) {
+		global $wpdb;
+		if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
+		if ( defined('DOING_AJAX') && DOING_AJAX ) return;
+		if ( defined('DOING_CRON') && DOING_CRON ) return;
+		if ( $post->post_status != 'publish' || $post->post_type != $this->post_type_name ) return;
+
+		$perm = 'edit_' . $this->post_type_name;
+		if ( current_user_can( $perm, $post_id ) ) {
+			$where = $wpdb->prepare( "WHERE post_status = 'publish' AND post_type = %s", $this->post_type_name );
+			$count = $wpdb->get_var( $wpdb->prepare( "SELECT count(*) FROM {$wpdb->posts} {$where} AND menu_order = %d", $post->menu_order ) );
+			if( $count > 1 )
+				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->posts} SET menu_order = menu_order + 1 {$where} AND menu_order >= %d AND ID != %d", $post->menu_order, $post->ID ) );
+		}
 	}
 }
 
@@ -128,6 +176,7 @@ $pgw_post_type = new PGW_Post_Type();
 class Rotating_Post_Widget extends WP_Widget {
 	// Note: these strings match strings in WP exactly. If changed the gettext domain will need to be added
 	var $sizes = array( 'full' => 'Full Size', 'medium' => 'Medium', 'large' => 'Large' );
+	var $order = array( 'date' => 'Date descending', 'menu' => 'Menu order ascending', 'rand' => 'Random' );
 	var $id = 'post_gallery_widget';
 	var $queued = false;
 
@@ -149,10 +198,10 @@ class Rotating_Post_Widget extends WP_Widget {
 		if( $instance['how_many'] > 0 )
 			$num_posts = $instance['how_many'];
 		if( !empty( $pgw_post_type ) ) {
-			$posts = $pgw_post_type->query_posts( $num_posts, $instance['size'] );
+			$posts = $pgw_post_type->query_posts( $num_posts, $instance['size'], $instance['order'] );
 			foreach( $posts as $p ) { ?>
 		<div class="slide<?php if( $first ) { echo ' first_slide'; } ?>">
-<?php				echo $p->tag; ?>
+<?php				 echo apply_filters( 'pgw_image_markup', $p->tag ); ?>
 			<span><h2><?php echo $p->post_title; ?></h2>
 				<p><?php echo $p->post_excerpt; ?><br /></p>
 			</span>
@@ -175,6 +224,8 @@ class Rotating_Post_Widget extends WP_Widget {
 		$new_instance['how_many'] = intval( $new_instance['how_many'] );
 		if( !in_array( $new_instance['size'], array_keys( $this->sizes ) ) )
 			$new_instance['size'] = 'full';
+		if( !in_array( $new_instance['order'], array_keys( $this->order ) ) )
+			$new_instance['order'] = 'date';
 
 		return $new_instance;
 	}
@@ -187,6 +238,13 @@ class Rotating_Post_Widget extends WP_Widget {
 			<select name="<?php echo $this->get_field_name( 'size' ); ?>" id="<?php echo $this->get_field_id( 'size' ); ?>" class="widefat">
 <?php		foreach( $this->sizes as $k => $v ) { ?>
 				<option value="<?php echo $k; ?>"<?php selected( $instance['size'], $k ); ?>><?php _e( $v ); ?></option>
+<?php		} ?>
+			</select>
+		</p>
+			<label for="<?php echo $this->get_field_id( 'order' ); ?>"><?php _e( 'Post order:', 'post-gallery-widget' ); ?></label>
+			<select name="<?php echo $this->get_field_name( 'order' ); ?>" id="<?php echo $this->get_field_id( 'order' ); ?>" class="widefat">
+<?php		foreach( $this->order as $k => $v ) { ?>
+				<option value="<?php echo $k; ?>"<?php selected( $instance['order'], $k ); ?>><?php _e( $v ); ?></option>
 <?php		} ?>
 			</select>
 		</p>
