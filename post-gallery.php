@@ -4,7 +4,7 @@ Plugin Name: Rotating Post Gallery
 Plugin URI: http://wpmututorials.com/plugins/post-gallery-widget/
 Description: A Rotating Gallery Widget using a custom post type to create Gallery Posts.
 Author: Ron Rennick
-Version: 0.3.1
+Version: 0.3.1.1
 Author URI: http://ronandandrea.com/
 
 This plugin is a collaboration project with contributions from the CUNY Acedemic Commons (http://dev.commons.gc.cuny.edu/)
@@ -44,13 +44,8 @@ class PGW_Post_Type {
 		'supports' => array( 'title', 'editor', 'author' )
 		);
 
-
-	function PGW_Post_Type() {
-		return $this->__construct();
-	}
-
 	function  __construct() {
-		add_action( 'init', array( &$this, 'init' ) );
+		add_action( 'init', array( $this, 'init' ) );
 
 		load_plugin_textdomain( 'post-gallery-widget', false, '/languages/' );
 		$this->post_type['label'] = __( 'Gallery Posts', 'post-gallery-widget' );
